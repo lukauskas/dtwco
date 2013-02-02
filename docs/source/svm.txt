@@ -1,0 +1,142 @@
+.. currentmodule:: mlpy
+
+Support Vector Machines (SVMs)
+==============================
+
+Linear Support Vector Classification (Linear SVC)
+-------------------------------------------------
+
+.. autoclass:: LinearSVC
+   :members:
+
+C-Support Vector Classification
+-------------------------------
+
+.. autoclass:: CSVC
+   :members:
+
+Nu-Support Vector Classification
+--------------------------------
+
+.. autoclass:: NuSVC
+   :members:
+
+
+One-Class-Support Vector Machines
+---------------------------------
+
+.. autoclass:: OneClassSVM
+   :members:
+
+
+Epsilon-Support Vector Regression
+---------------------------------
+
+.. autoclass:: EpsilonSVR
+   :members:
+
+Nu-Support Vector Regression
+---------------------------------
+
+.. autoclass:: NuSVR
+   :members:
+
+
+Support Vector Machines from [LIBSVM]_
+--------------------------------------
+
+.. autoclass:: LibSvm
+   :members:
+
+Example on :download:`spiral dataset <data/spiral.data>`:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> f = np.loadtxt("spiral.data")
+>>> x, y = f[:, :2], f[:, 2]
+>>> svm = mlpy.LibSvm(svm_type='c_svc', kernel=mlpy.KernelGaussian(0.07))
+>>> svm.learn(x, y)
+>>> xmin, xmax = x[:,0].min()-0.1, x[:,0].max()+0.1
+>>> ymin, ymax = x[:,1].min()-0.1, x[:,1].max()+0.1
+>>> xx, yy = np.meshgrid(np.arange(xmin, xmax, 0.01), np.arange(ymin, ymax, 0.01))
+>>> xnew = np.c_[xx.ravel(), yy.ravel()]
+>>> ynew = svm.pred(xnew).reshape(xx.shape)
+>>> fig = plt.figure(1)
+>>> plt.set_cmap(plt.cm.Paired)
+>>> plt.pcolormesh(xx, yy, ynew)
+>>> plt.scatter(x[:,0], x[:,1], c=y)
+>>> plt.show()
+
+.. image:: images/svm_spiral.png
+
+.. [LIBSVM] Chih-Chung Chang and Chih-Jen Lin. LIBSVM: a library for support vector machines. 2001. Software available at http://www.csie.ntu.edu.tw/~cjlin/libsvm
+.. [Cristianini] N Cristianini and J Shawe-Taylor. An introduction to support vector machines. Cambridge University Press.
+.. [Vapnik95] V Vapnik. The Nature of Statistical Learning Theory. Springer-Verlag, 1995.
+
+
+Kernel Adatron
+--------------
+
+.. class:: mlpy.KernelAdatron(C=1000, maxsteps=1000, eps=0.01)
+   
+   Kernel Adatron algorithm without-bias-term (binary classifier).
+    
+   The algoritm handles a version of the 1-norm soft margin
+   support vector machine. If C is very high the algoritm 
+   handles a version of the hard margin SVM.
+
+   Use positive definite kernels (such as Gaussian
+   and Polynomial kernels)
+   
+   :Parameters:
+      C : float
+         upper bound on the value of alpha
+      maxsteps : integer (> 0)
+         maximum number of steps
+      eps : float (>=0)
+         the algoritm stops when abs(1 - margin) < eps
+	 
+   .. automethod:: learn(K, y)
+   .. automethod:: pred(Kt)
+   .. automethod:: margin()
+   .. automethod:: steps()
+   .. automethod:: alpha()
+
+Example:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 4.5], [[1,1],[1,2]], 20  # 20 samples of class 1
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.ones(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 2.5], [[1,1],[1,2]], 30 # 30 samples of class 2
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = 2 * np.ones(n2, dtype=np.int)
+>>> x = np.concatenate((x1, x2), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2))
+>>> K = mlpy.kernel_gaussian(x, x, sigma=2) # kernel matrix
+>>> xmin, xmax = x[:,0].min()-1, x[:,0].max()+1
+>>> ymin, ymax = x[:,1].min()-1, x[:,1].max()+1
+>>> xx, yy = np.meshgrid(np.arange(xmin, xmax, 0.02), np.arange(ymin, ymax, 0.02))
+>>> xt = np.c_[xx.ravel(), yy.ravel()] # test points
+>>> Kt = mlpy.kernel_gaussian(xt, x, sigma=2) # test kernel matrix
+>>> fig = plt.figure(1)
+>>> cmap = plt.set_cmap(plt.cm.Paired)
+>>> for i, c in enumerate([1, 10, 100, 1000]):
+...     ka = mlpy.KernelAdatron(C=c)
+...     ax = plt.subplot(2, 2, i+1)
+...     ka.learn(K, y)
+...     ytest = ka.pred(Kt).reshape(xx.shape)
+...     title = ax.set_title('C: %s; margin: %.3f; steps: %s;' % (c, ka.margin(), ka.steps()))
+...     plot1 = plt.pcolormesh(xx, yy, ytest)
+...     plot2 = plt.scatter(x[:,0], x[:,1], c=y)
+>>> plt.show()
+
+.. image:: images/kernel_adatron.png
+
+
+.. [Friess] Friess, Cristianini, Campbell. The Kernel-Adatron Algorithm: a Fast and Simple Learning Procedure for Support Vector Machines.
+.. [Kecman03] Kecman, Vogt, Huang. On the Equality of Kernel AdaTron and Sequential Minimal Optimization in Classification and Regression Tasks and Alike Algorithms for Kernel Machines. ESANN'2003 proceedings - European Symposium on Artificial Neural Networks, ISBN 2-930307-03-X, pp. 215-222.

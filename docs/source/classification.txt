@@ -1,0 +1,454 @@
+.. currentmodule:: mlpy
+
+Classification
+==============
+
+Linear Discriminant Analysis Classifier (LDA)
+----------------------------------------------
+
+.. autoclass:: LDAC
+   :members:
+
+Examples
+^^^^^^^^
+
+Binary classification:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 5], [[1,1],[1,2]], 200  # 200 samples of class 1
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.ones(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 2.5], [[1,0],[0,1]], 300 # 300 samples of class -1
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = -np.ones(n2, dtype=np.int)
+>>> x = np.concatenate((x1, x2), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2))
+>>> ldac = mlpy.LDAC()
+>>> ldac.learn(x, y)
+>>> w = ldac.w()
+>>> w
+array([ 2.5948979  -2.58553746])
+>>> b = ldac.bias()
+>>> b
+5.63727441841
+>>> xx = np.arange(np.min(x[:,0]), np.max(x[:,0]), 0.01)
+>>> yy = - (w[0] * xx + b) / w[1] # separator line
+>>> fig = plt.figure(1) # plot
+>>> plot1 = plt.plot(x1[:, 0], x1[:, 1], 'ob', x2[:, 0], x2[:, 1], 'or')
+>>> plot2 = plt.plot(xx, yy, '--k')
+>>> plt.show()
+
+.. image:: images/lda_binary.png
+
+>>> test = [[0, 2], [4, 2]] # test points
+>>> ldac.pred(test)
+array([-1, -1])
+>>> ldac.labels()
+array([-1,  1])
+
+Multiclass classification:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 25], [[1,1],[1,2]], 200  # 200 samples of class 0
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.zeros(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 22.5], [[1,0],[0,1]], 300 # 300 samples of class 1
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = np.ones(n2, dtype=np.int)
+>>> mean3, cov3, n3 = [5, 28], [[0.5,0],[0,0.5]], 200 # 200 samples of class 2
+>>> x3 = np.random.multivariate_normal(mean3, cov3, n3)
+>>> y3 = 2 * np.ones(n3, dtype=np.int)
+>>> x = np.concatenate((x1, x2, x3), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2, y3))
+>>> ldac = mlpy.LDAC()
+>>> ldac.learn(x, y)
+>>> w = ldac.w()
+>>> w # w[i]: coefficients label ldac.labels()[i]
+array([[-0.30949939  4.53041257]
+       [ 2.52002288  1.50501818]
+       [ 4.2499381   5.90569921]])
+>>> b = ldac.bias()
+>>> b # b[i]: bias for label ldac.labels()[i]
+array([-12.65129158  -5.7628039  -35.63605709])
+>>> xx = np.arange(np.min(x[:,0]), np.max(x[:,0]), 0.01)
+>>> yy1 = (xx* (w[1][0]-w[0][0]) + b[1] - b[0]) / (w[0][1]-w[1][1])
+>>> yy2 = (xx* (w[2][0]-w[0][0]) + b[2] - b[0]) / (w[0][1]-w[2][1])
+>>> yy3 = (xx* (w[2][0]-w[1][0]) + b[2] - b[1]) / (w[1][1]-w[2][1])
+>>> fig = plt.figure(1) # plot
+>>> plot1 = plt.plot(x1[:, 0], x1[:, 1], 'ob', x2[:, 0], x2[:, 1], 'or', x3[:, 0], x3[:, 1], 'og')
+>>> plot2 = plt.plot(xx, yy1, '--k')
+>>> plot3 = plt.plot(xx, yy2, '--k')
+>>> plot4 = plt.plot(xx, yy3, '--k')
+>>> plt.show()
+
+.. image:: images/lda_multi.png
+
+>>> test = [[6,7], [4, 2]] # test points
+>>> ldac.pred(test)
+array([2, 1])
+>>> ldac.labels()
+array([0, 1, 2])
+
+
+
+Quadratic Discriminant Analysis (QDA)
+-------------------------------------
+Described in [Hastie09]_, pages 110 and 113.
+
+.. autoclass:: QDA
+   :members:
+
+Example:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 5], [[1,1],[1,2]], 300  # 200 samples of class 0
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.ones(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 2.5], [[1,0],[0,1]], 200 # 300 samples of class 1
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = 2 * np.ones(n2, dtype=np.int)
+>>> x = np.concatenate((x1, x2), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2))
+>>> qda = mlpy.QDA()
+>>> qda.learn(x, y)
+>>> xmin, xmax = x[:,0].min()-1, x[:,0].max()+1
+>>> ymin, ymax = x[:,1].min()-1, x[:,1].max()+1
+>>> xx, yy = np.meshgrid(np.arange(xmin, xmax, 0.1), np.arange(ymin, ymax, 0.1))
+>>> xnew = np.c_[xx.ravel(), yy.ravel()]
+>>> ynew = qda.pred(xnew).reshape(xx.shape)
+>>> fig = plt.figure(1)
+>>> values = qda.pred_values(xnew).reshape(xx.shape)
+>>> cmap = plt.set_cmap(plt.cm.RdBu)
+>>> plot = plt.imshow(values, interpolation='nearest',
+...                   extent=(xmin, xmax, ymin, ymax), vmin=-26, vmax=26,
+...                   aspect='auto', origin='lower', cmap=plt.cm.RdBu)
+>>> contours = plt.contour(xx, yy, values, levels=[0], linewidths=2,
+...                        linetypes='--')
+>>> scatter1 = plt.scatter(x[y==1, 0], x[y==1, 1], s=40, c='w', marker='o')
+>>> scatter2 = plt.scatter(x[y==2, 0], x[y==2, 1], s=40, c='w', marker='^')
+>>> plt.show()
+
+.. image:: images/qda.png
+
+
+Diagonal Linear Discriminant Analysis (DLDA)
+--------------------------------------------
+Described in [Hastie09]_, pages 651-654.
+
+.. autoclass:: DLDA
+   :members:
+
+Example:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 5], [[1,1],[1,2]], 200  # 200 samples of class 0
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.zeros(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 2.5], [[1,0],[0,1]], 300 # 300 samples of class 1
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = np.ones(n2, dtype=np.int)
+>>> mean3, cov3, n3 = [5, 8], [[0.5,0],[0,0.5]], 200 # 200 samples of class 2
+>>> x3 = np.random.multivariate_normal(mean3, cov3, n3)
+>>> y3 = 2 * np.ones(n3, dtype=np.int)
+>>> x = np.concatenate((x1, x2, x3), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2, y3))
+>>> da = mlpy.DLDA(delta=0.1)
+>>> da.learn(x, y)
+>>> xmin, xmax = x[:,0].min()-1, x[:,0].max()+1
+>>> ymin, ymax = x[:,1].min()-1, x[:,1].max()+1
+>>> xx, yy = np.meshgrid(np.arange(xmin, xmax, 0.1), np.arange(ymin, ymax, 0.1))
+>>> xnew = np.c_[xx.ravel(), yy.ravel()]
+>>> ynew = da.pred(xnew).reshape(xx.shape)
+>>> fig = plt.figure(1)
+>>> cmap = plt.set_cmap(plt.cm.Paired)
+>>> plot1 = plt.pcolormesh(xx, yy, ynew)
+>>> plot2 = plt.scatter(x[:,0], x[:,1], c=y)
+>>> plt.show()
+
+.. image:: images/dlda.png
+
+Kernel Fisher Discriminant Classifier (KFDA)
+--------------------------------------------
+See [Gavin03]_.
+
+.. autoclass:: KFDAC
+   :members:
+
+
+Gaussian Naive Bayes
+--------------------
+
+.. autoclass:: GaussianNB
+   :members:
+
+
+Single Layer Perceptron
+-----------------------
+
+.. autoclass:: Perceptron
+   :members:
+
+
+Examples
+^^^^^^^^
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 5], [[1,1],[1,2]], 200  # 200 samples of class 1
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.ones(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 2.5], [[1,0],[0,1]], 300 # 300 samples of class -1
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = -np.ones(n2, dtype=np.int)
+>>> x = np.concatenate((x1, x2), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2))
+>>> p = mlpy.Perceptron(alpha=0.1, thr=0.05, maxiters=100) # basic perceptron
+>>> p.learn(x, y)
+>>> w = p.w()
+>>> w
+array([ 138.00370508,  -92.98404264])
+>>> b = p.bias()
+>>> b
+119.2
+>>> p.err()
+0.050000000000000003
+>>> p.iters()
+46
+>>> xx = np.arange(np.min(x[:,0]), np.max(x[:,0]), 0.01)  
+>>> yy = - (w[0] * xx + b) / w[1] # separator line
+>>> fig = plt.figure(1) # plot
+>>> plot1 = plt.plot(x1[:, 0], x1[:, 1], 'ob', x2[:, 0], x2[:, 1], 'or')
+>>> plot2 = plt.plot(xx, yy, '--k')
+>>> plt.show()
+
+.. image:: images/perceptron.png
+
+>>> test = [[0, 2], [4, 2]] # test points
+>>> p.pred(test)
+array([ 1, -1])
+>>> p.labels()
+array([-1,  1])
+
+
+Elastic Net Classifier
+----------------------
+See [Hastie09]_, Chapter 18, page 661.
+
+.. autoclass:: ElasticNetC
+   :members:
+
+Example:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 5], [[1,1],[1,2]], 200  # 200 samples of class 1
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.ones(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 2.5], [[1,0],[0,1]], 300 # 300 samples of class -1
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = -np.ones(n2, dtype=np.int)
+>>> x = np.concatenate((x1, x2), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2))
+>>> en = mlpy.ElasticNetC(lmb=0.01, eps=0.001)
+>>> en.learn(x, y)
+>>> w = en.w()
+>>> w
+array([-0.27733363,  0.30115026])
+>>> b = en.bias()
+>>> b
+-0.73445916200332606
+>>> en.iters()
+1000
+>>> xx = np.arange(np.min(x[:,0]), np.max(x[:,0]), 0.01)
+>>> yy = - (w[0] * xx + b) / w[1] # separator line
+>>> fig = plt.figure(1) # plot
+>>> plot1 = plt.plot(x1[:, 0], x1[:, 1], 'ob', x2[:, 0], x2[:, 1], 'or')
+>>> plot2 = plt.plot(xx, yy, '--k')
+>>> plt.show()
+
+.. image:: images/elasticnetc.png
+
+>>> test = [[1, 4], [2, 2]] # test points
+>>> en.pred(test)
+array([ 1., -1.])
+
+
+Logistic Regression
+-------------------
+
+.. autoclass:: LogisticRegression
+   :members:
+
+
+Golub Classifier
+----------------
+Described in [Golub99]_.
+
+.. autoclass:: Golub
+   :members:
+
+
+Parzen-based classifier
+-----------------------
+
+.. autoclass:: Parzen
+   :members:
+
+Example:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 4.5], [[1,1],[1,2]], 20  # 20 samples of class 1
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.ones(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 2.5], [[1,1],[1,2]], 30 # 30 samples of class 2
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = 2 * np.ones(n2, dtype=np.int)
+>>> x = np.concatenate((x1, x2), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2))
+>>> K = mlpy.kernel_gaussian(x, x, sigma=2) # kernel matrix
+>>> parzen = mlpy.Parzen()
+>>> parzen.learn(K, y)
+>>> xmin, xmax = x[:,0].min()-1, x[:,0].max()+1
+>>> ymin, ymax = x[:,1].min()-1, x[:,1].max()+1
+>>> xx, yy = np.meshgrid(np.arange(xmin, xmax, 0.02), np.arange(ymin, ymax, 0.02))
+>>> xt = np.c_[xx.ravel(), yy.ravel()] # test points
+>>> Kt = mlpy.kernel_gaussian(xt, x, sigma=2) # test kernel matrix
+>>> yt = parzen.pred(Kt).reshape(xx.shape)
+>>> fig = plt.figure(1)
+>>> cmap = plt.set_cmap(plt.cm.Paired)
+>>> plot1 = plt.pcolormesh(xx, yy, yt)
+>>> plot2 = plt.scatter(x[:,0], x[:,1], c=y)
+>>> plt.show()
+
+.. image:: images/parzen.png
+
+
+Support Vector Classification
+-----------------------------
+
+See :doc:`svm`
+
+
+k-Nearest-Neighbor
+------------------
+
+.. class:: mlpy.KNN(k)
+   	   
+	k-Nearest Neighbor (euclidean distance)
+        
+	:Parameters:
+           k : int
+              number of nearest neighbors
+       	
+	.. automethod:: learn(x, y)
+        .. automethod:: pred(t)
+	.. automethod:: labels()
+
+Example:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 5], [[1,1],[1,2]], 200  # 200 samples of class 1
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.ones(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 2.5], [[1,0],[0,1]], 300 # 300 samples of class 2
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = 2 * np.ones(n2, dtype=np.int)
+>>> mean3, cov3, n3 = [5, 8], [[0.5,0],[0,0.5]], 200 # 200 samples of class 3
+>>> x3 = np.random.multivariate_normal(mean3, cov3, n3)
+>>> y3 = 3 * np.ones(n3, dtype=np.int)
+>>> x = np.concatenate((x1, x2, x3), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2, y3))
+>>> knn = mlpy.KNN(k=3)
+>>> knn.learn(x, y)
+>>> xmin, xmax = x[:,0].min()-1, x[:,0].max()+1
+>>> ymin, ymax = x[:,1].min()-1, x[:,1].max()+1
+>>> xx, yy = np.meshgrid(np.arange(xmin, xmax, 0.1), np.arange(ymin, ymax, 0.1))
+>>> xnew = np.c_[xx.ravel(), yy.ravel()]
+>>> ynew = knn.pred(xnew).reshape(xx.shape)
+>>> ynew[ynew == 0] = 1 # set the samples with no unique classification to 1
+>>> fig = plt.figure(1)
+>>> cmap = plt.set_cmap(plt.cm.Paired)
+>>> plot1 = plt.pcolormesh(xx, yy, ynew)
+>>> plot2 = plt.scatter(x[:,0], x[:,1], c=y)
+>>> plt.show()
+
+.. image:: images/knn.png
+
+
+Classification Tree
+-------------------
+
+.. class:: mlpy.ClassTree(stumps=0, minsize=1)
+   	   
+	Classification Tree (gini index)
+        
+	:Parameters:
+           stumps : bool
+              True: compute single split or False: standard tree
+           minsize : int (>=0)
+              minimum number of cases required to split a leaf
+	       	
+	.. automethod:: learn(x, y)
+        .. automethod:: pred(t)
+	.. automethod:: labels()
+
+
+Example:
+
+>>> import numpy as np
+>>> import matplotlib.pyplot as plt
+>>> import mlpy
+>>> np.random.seed(0)
+>>> mean1, cov1, n1 = [1, 5], [[1,1],[1,2]], 200  # 200 samples of class 1
+>>> x1 = np.random.multivariate_normal(mean1, cov1, n1)
+>>> y1 = np.ones(n1, dtype=np.int)
+>>> mean2, cov2, n2 = [2.5, 2.5], [[1,0],[0,1]], 300 # 300 samples of class 2
+>>> x2 = np.random.multivariate_normal(mean2, cov2, n2)
+>>> y2 = 2 * np.ones(n2, dtype=np.int)
+>>> mean3, cov3, n3 = [6, 8], [[0.5,0],[0,0.5]], 200 # 200 samples of class 3
+>>> x3 = np.random.multivariate_normal(mean3, cov3, n3)
+>>> y3 = 3 * np.ones(n3, dtype=np.int)
+>>> x = np.concatenate((x1, x2, x3), axis=0) # concatenate the samples
+>>> y = np.concatenate((y1, y2, y3))
+>>> tree = mlpy.ClassTree(minsize=10)
+>>> tree.learn(x, y)
+>>> xmin, xmax = x[:,0].min()-1, x[:,0].max()+1
+>>> ymin, ymax = x[:,1].min()-1, x[:,1].max()+1
+>>> xx, yy = np.meshgrid(np.arange(xmin, xmax, 0.1), np.arange(ymin, ymax, 0.1))
+>>> xnew = np.c_[xx.ravel(), yy.ravel()]
+>>> ynew = tree.pred(xnew).reshape(xx.shape)
+>>> ynew[ynew == 0] = 1 # set the samples with no unique classification to 1
+>>> fig = plt.figure(1)
+>>> cmap = plt.set_cmap(plt.cm.Paired)
+>>> plot1 = plt.pcolormesh(xx, yy, ynew)
+>>> plot2 = plt.scatter(x[:,0], x[:,1], c=y)
+>>> plt.show()
+
+.. image:: images/classtree.png
+
+
+.. [Hastie09] T Hastie, R Tibshirani, J Friedman. The Elements of Statistical Learning. Second Edition.
+.. [Gavin03] Gavin C. et al. Efficient Cross-Validation of Kernel Fisher Discriminant Classifers. ESANN'2003 proceedings - European Symposium on Artificial Neural Networks, 2003.
+.. [Golub99] T R Golub et al. Molecular classification of cancer: Class discovery and class prediction by gene expression monitoring. Science, 1999.

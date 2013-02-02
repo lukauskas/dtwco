@@ -1,0 +1,68 @@
+fastcluster: Fast hierarchical clustering routines for R and Python
+
+Copyright © 2011 Daniel Müllner
+<http://math.stanford.edu/~muellner>
+
+
+Version history
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+Version 1.0.0, 03/14/2011:
+
+  • Initial release, dependent on Rcpp. Not available on CRAN.
+
+Version 1.0.1, 03/15/2011:
+
+  • Removed the dependence on Rcpp; only R's original C interface is used.
+
+Version 1.0.2, 03/17/2011:
+
+  • File DESCRIPTION: Fixed a typo
+
+Version 1.0.3, 03/20/2011:
+
+  • File README: Removed the warning about false results from the flashClust
+    package since the new flashClust version 1.01 has this error corrected.
+
+  • Cleaned the test file fastcluster_test.R up. (No dependence on the MASS
+    package any more)
+
+Version 1.0.4, 03/21/2011:
+
+  • Changed the name of the external function from the outdated "Rcpp_linkage"
+    to "fastcluster".
+
+  • Registered the external function "fastcluster" in R.
+
+  • Configured the C header inclusions to work on Fedora (thanks to Peter
+    Langfelder).
+
+Version 1.1.0, 08/21/2011
+
+  • Routines for clustering vector data.
+
+  • Added a User's manual
+
+  • Revision of all files
+
+Version 1.1.1, 10/08/2011
+
+  • Fixed test scripts, which indicated an error on some architectures, even
+    if results were correct. (The assumption was that ties in single linkage
+    clustering are resolved in the same way, both for dissimilarity input and
+    for vector input. This is not necessarily true if the floating point unit
+    uses "excess precision". Now the test scripts are content with arbitrary
+    resolution of ties and do not assume a specific scheme.)
+
+  • Bug fix: uninitialized function pointer in Version 1.1.0
+
+Version 1.1.2, 10/11/2011
+
+  • Fix for Solaris: replaced ssize_t by ptrdiff_t in the C++ code.
+
+  • Removed the NN-chain algorithm for vector input: it was not clear that
+    it would work under all circumstances with the intricacies of floating-
+    point arithmetic. Especially the effects of the excess precision on the
+    x87 are impossible to control in a portable way. Now, the memory-saving
+    routines for the “Ward” linkage use the generic algorithm, as “centroid”
+    and “median” linkage do.
+

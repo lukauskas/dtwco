@@ -1,0 +1,12 @@
+include *.txt
+recursive-include mlpy *.h
+recursive-include mlpy *.c
+recursive-include mlpy *.cpp
+recursive-include mlpy *.pxd
+recursive-include mlpy *.pyx
+include docs/Makefile
+include docs/source/*.py
+include docs/source/*.txt
+include docs/source/images/*
+include docs/source/data/*
+include docs/art/*
