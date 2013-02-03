@@ -64,20 +64,26 @@ paliwal_window(int i, int j, int n, int m, int r)
     return 0;
 }
 
-// euclidean distance
-double e_dist(double x, double y)
-{
-  return fabs(x - y);
-}
 
 // squared euclidean distance
-double se_dist(double x, double y)
+double se_dist(const double *x, const double *y, const int n_dimensions)
 {
-  return pow(x - y, 2);
+   double ans = 0;
+   for (int i = 0; i < n_dimensions; i++)
+   {
+       ans += pow(x[i] - y[i], 2);
+   }
+   return ans;
+}
+
+// euclidean distance
+double e_dist(const double *x, const double *y, const int n_dimensions)
+{
+  return sqrt(se_dist(x,y,n_dimensions));
 }
 
 // Distance function selector
-double (*distance_function(int squared))(double, double) {
+double (*distance_function(int squared))(const double *x, const double *y, const int) {
     if (squared == 0)
         return &e_dist;
     else
@@ -86,32 +92,31 @@ double (*distance_function(int squared))(double, double) {
 
 // Fills the cost matrix, *cost, without any constraints - O(nm)
 void
-fill_cost_matrix_unconstrained(const double *x, const double *y, int n, int m, int squared, double *cost)
+fill_cost_matrix_unconstrained(const double *x, const double *y, int n, int m, int n_dimensions, int squared, double *cost)
 {
-     double (*dist)(double, double);
+     double (*dist)(const double *,  const double *, const int);
      dist = distance_function(squared);
-
      int i, j;
-     cost[0] = (*dist)(x[0], y[0]);
+     cost[0] = (*dist)(&x[0], &y[0], n_dimensions);
 
       for (i=1; i<n; i++)
-          cost[i*m] = (*dist)(x[i], y[0]) + cost[(i-1)*m];
+          cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
 
       for (j=1; j<m; j++)
-          cost[j] = (*dist)(x[0], y[j]) + cost[(j-1)];
+          cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)];
 
       for (i=1; i<n; i++)
         for (j=1; j<m; j++)
-             cost[i*m+j] = (*dist)(x[i], y[j]) +
+             cost[i*m+j] = (*dist)(&x[i*n_dimensions], &y[j*n_dimensions], n_dimensions) +
     	        min3(cost[(i-1)*m+j], cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]);
 }
 
 // Fills the cost matrix, *cost, with respect to Sakoe & Chiba band constraint |i-j| < ks  -- O(k*n)
 void
-fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, int n, int m, int squared, double *cost,
+fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int squared, double *cost,
                                              int sakoe_chiba_band_parameter)
 {
-      double (*dist)(double, double);
+      double (*dist)(const double *,  const double *, const int);
       dist = distance_function(squared);
 
       int i, j;
@@ -121,17 +126,17 @@ fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, i
           cost[i] = INFINITY;
 
       // Initialise
-      cost[0] = (*dist)(x[0], y[0]);
+      cost[0] = (*dist)(&x[0], &y[0], n_dimensions);
 
       for (i=1; i<min2(n, sakoe_chiba_band_parameter+1); i++)
-          cost[i*m] = (*dist)(x[i], y[0]) + cost[(i-1)*m];
+          cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
       for (j=1; j<min2(m, sakoe_chiba_band_parameter+1); j++)
-          cost[j] = (*dist)(x[0], y[j]) + cost[(j-1)];
+          cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)];
 
       // Fill only the columns that satisfy |i-j| <= sakoe_chiba_band_parameter
       for (i=1; i<n; i++)
         for (j=max2(i-sakoe_chiba_band_parameter, 1); j<min2(m, i+sakoe_chiba_band_parameter+1); j++)
-             cost[i*m+j] = (*dist)(x[i], y[j]) +
+             cost[i*m+j] = (*dist)(&x[i*n_dimensions], &y[j*n_dimensions], n_dimensions) +
     	        min3(cost[(i-1)*m+j], cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]);
 }
 
@@ -142,34 +147,33 @@ fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, i
 //		(iw >= n-1-2*(m-jw)) &
 //		(jw >  m-1-2*(n-iw)) ;
 int itakura_constraint(int i, int j, int n, int m) {
-    return (j < 2*i) & (i <= 2*j) & (i>= n-1-2*(m-j)) & (j > m-1-2*(n-i));
+    return (j < 2*i) && (i <= 2*j) && (i>= n-1-2*(m-j)) && (j > m-1-2*(n-i));
 }
 
 // Fill cost matrix constrained by Itakura Paralellogram
 void
-fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n, int m, int squared, double *cost)
+fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int squared, double *cost)
 {
-    double (*dist)(double, double);
+    double (*dist)(const double *,  const double *, const int);
     dist = distance_function(squared);
 
     int i, j;
-
     // Fill cost matrix with infinities first
     for (i = 0; i < n*m; i++)
       cost[i] = INFINITY;
 
     // Initialise
-    cost[0] = (*dist)(x[0], y[0]);
+    cost[0] = (*dist)(&x[0], &y[0], n_dimensions);
 
     for (i=1; i<n; i++)
     {
         if (!itakura_constraint(i, 0, n, m)) continue;
-        cost[i*m] = (*dist)(x[i], y[0]) + cost[(i-1)*m];
+        cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
     }
     for (j=1; j<m; j++)
     {
         if (!itakura_constraint(0,j,n,m)) continue;
-        cost[j] = (*dist)(x[0], y[j]) + cost[(j-1)];
+        cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)];
     }
     for (i=1; i<n; i++)
     {
@@ -178,7 +182,7 @@ fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n
              if (!itakura_constraint(i,j,n,m))
                  continue;
 
-             cost[i*m+j] = (*dist)(x[i], y[j]) +
+             cost[i*m+j] = (*dist)(&x[i*n_dimensions], &y[j*n_dimensions], n_dimensions) +
                 min3(cost[(i-1)*m+j], cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]);
         }
     }
@@ -187,10 +191,12 @@ fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n
 // Fills arbitrarily constrained matrix
 // The constraint is specified by boolean array *constraint_matrix
 void
-fill_constrained_cost_matrix(const double *x, const double *y, int n, int m, int squared, double *cost,
+fill_constrained_cost_matrix(const double *x, const double *y,
+                             int n, int m, int n_dimensions,
+                             int squared, double *cost,
                              const char *constraint_matrix)
 {
-    double (*dist)(double, double);
+    double (*dist)(const double *,  const double *, const int);
     dist = distance_function(squared);
 
     int i, j;
@@ -200,17 +206,17 @@ fill_constrained_cost_matrix(const double *x, const double *y, int n, int m, int
       cost[i] = INFINITY;
 
     // Initialise
-    cost[0] = (*dist)(x[0], y[0]);
+    cost[0] = (*dist)(&x[0], &y[0], n_dimensions);
 
     for (i=1; i<n; i++)
     {
         if (!constraint_matrix[i*m]) continue;
-        cost[i*m] = (*dist)(x[i], y[0]) + cost[(i-1)*m];
+        cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
     }
     for (j=1; j<m; j++)
     {
         if (!constraint_matrix[j]) continue;
-        cost[j] = (*dist)(x[0], y[j]) + cost[(j-1)];
+        cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)];
     }
     for (i=1; i<n; i++)
     {
@@ -219,7 +225,7 @@ fill_constrained_cost_matrix(const double *x, const double *y, int n, int m, int
              if (!constraint_matrix[i*m+j])
                  continue;
 
-             cost[i*m+j] = (*dist)(x[i], y[j]) +
+             cost[i*m+j] = (*dist)(&x[i*n_dimensions], &y[j*n_dimensions], n_dimensions) +
                 min3(cost[(i-1)*m+j], cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]);
         }
     }

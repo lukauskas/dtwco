@@ -85,8 +85,19 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
     .. [Itakura75] F Itakura. Minimum prediction residual principle applied to speech recognition. Acoustics, Speech and Signal Processing, IEEE Transactions on, 23(1), 67–72, 1975. doi:10.1109/TASSP.1975.1162641.
     """
 
-    cdef np.ndarray[np.float_t, ndim=1] x_arr
-    cdef np.ndarray[np.float_t, ndim=1] y_arr
+    x = np.ascontiguousarray(x, dtype=np.float)
+    y = np.ascontiguousarray(y, dtype=np.float)
+
+    if x.ndim == 1 and x.ndim == 1: # Turn one-dimensional array into two-dimensional one
+        x = np.reshape(x, (1,-1))
+        y = np.reshape(y, (1,-1))
+
+    if x.shape[0] != y.shape[0]:
+        raise ValueError('Both sequences must have the same number of dimensions in each element')
+
+
+    cdef np.ndarray[np.float_t, ndim=2] x_arr
+    cdef np.ndarray[np.float_t, ndim=2] y_arr
     cdef np.ndarray[np.float_t, ndim=2] cost_arr
 
     cdef double dist
@@ -96,11 +107,14 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
     cdef np.ndarray[np.int_t, ndim=1] px_arr
     cdef np.ndarray[np.int_t, ndim=1] py_arr
 
-    x_arr = np.ascontiguousarray(x, dtype=np.float)
-    y_arr = np.ascontiguousarray(y, dtype=np.float)
+    # Note the transpose of x and y below, this is because we want user to submit dimensions as rows,
+    # but having the sequence as first index is better for looping in C
+    x_arr = np.ascontiguousarray(x.T, dtype=np.float)
+    y_arr = np.ascontiguousarray(y.T, dtype=np.float)
 
-    cdef n = x_arr.shape[0]
-    cdef m = y_arr.shape[0]
+    cdef int n = x_arr.shape[0]
+    cdef int m = y_arr.shape[0]
+    cdef int n_dimensions = x_arr.shape[1]
 
     cost_arr = np.empty((n,m), dtype=np.float)
 
@@ -110,7 +124,7 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
     if constraint is None or constraint == 'None':
         fill_cost_matrix_unconstrained(
             <double *> x_arr.data, <double *> y_arr.data,
-            <int> n, <int> m,
+            <int> n, <int> m, <int> n_dimensions,
             sq, <double *> cost_arr.data)
     elif constraint == 'sakoe_chiba':
         if k is None:
@@ -122,14 +136,14 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
 
         fill_cost_matrix_with_sakoe_chiba_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
-            <int> n, <int> m,
+            <int> n, <int> m, <int> n_dimensions,
             sq, <double *> cost_arr.data,
             <int> k
         )
     elif constraint == 'itakura':
         fill_cost_matrix_with_itakura_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
-            <int> n, <int> m,
+            <int> n, <int> m, <int> n_dimensions,
             sq, <double *> cost_arr.data)
 
     dist = cost_arr[n-1, m-1]
