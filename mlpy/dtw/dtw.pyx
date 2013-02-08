@@ -89,10 +89,10 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
     y = np.ascontiguousarray(y, dtype=np.float)
 
     if x.ndim == 1 and x.ndim == 1: # Turn one-dimensional array into two-dimensional one
-        x = np.reshape(x, (1,-1))
-        y = np.reshape(y, (1,-1))
+        x = np.reshape(x, (-1, 1))
+        y = np.reshape(y, (-1, 1))
 
-    if x.shape[0] != y.shape[0]:
+    if x.shape[1] != y.shape[1]:
         raise ValueError('Both sequences must have the same number of dimensions in each element')
 
 
@@ -107,10 +107,8 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
     cdef np.ndarray[np.int_t, ndim=1] px_arr
     cdef np.ndarray[np.int_t, ndim=1] py_arr
 
-    # Note the transpose of x and y below, this is because we want user to submit dimensions as rows,
-    # but having the sequence as first index is better for looping in C
-    x_arr = np.ascontiguousarray(x.T, dtype=np.float)
-    y_arr = np.ascontiguousarray(y.T, dtype=np.float)
+    x_arr = np.ascontiguousarray(x, dtype=np.float)
+    y_arr = np.ascontiguousarray(y, dtype=np.float)
 
     cdef int n = x_arr.shape[0]
     cdef int m = y_arr.shape[0]
