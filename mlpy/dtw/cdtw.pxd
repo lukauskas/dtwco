@@ -1,5 +1,9 @@
 cdef extern from "cdtw.h":
-    
+    cdef enum MLPY_DTW_DISTANCES:
+        MLPY_DTW_DISTANCE_EUCLIDEAN
+        MLPY_DTW_DISTANCE_SQEUCLIDEAN
+        MLPY_DTW_DISTANCE_COSINE
+
     ctypedef struct Path:
        int k
        int *px

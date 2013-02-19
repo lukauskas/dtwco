@@ -19,6 +19,7 @@ import numpy as np
 cimport numpy as np
 from libc.stdlib cimport *
 from cdtw cimport *
+import logging
 
 np.import_array()
 
@@ -48,7 +49,7 @@ cdef retrace_path(int n, int m, np.ndarray[np.float_t, ndim=2] cost_arr):
 
     return px_arr, py_arr
 
-def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
+def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
     """Standard DTW as described in [Muller07]_,
     using the Euclidean distance (absolute value 
     of the difference) or squared Euclidean distance
@@ -61,8 +62,8 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
           second sequence
        dist_only : bool
           compute only the distance
-       squared : bool
-          squared Euclidean distance
+       metric : 'euclidean', 'sqeuclidean' or 'cosine'
+          distance metric to use
        constraint: string
           one of the following:
              None or ('None') : unconstrained DTW.
@@ -102,7 +103,6 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
 
     cdef double dist
     cdef int i
-    cdef int sq
 
     cdef np.ndarray[np.int_t, ndim=1] px_arr
     cdef np.ndarray[np.int_t, ndim=1] py_arr
@@ -116,14 +116,22 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
 
     cost_arr = np.empty((n,m), dtype=np.float)
 
-    if squared: sq = 1
-    else: sq = 0
+    cdef int distance
+
+    if metric == 'sqeuclidean':
+        distance = MLPY_DTW_DISTANCE_SQEUCLIDEAN
+    elif metric == 'euclidean':
+        distance = MLPY_DTW_DISTANCE_EUCLIDEAN
+    elif metric == 'cosine':
+        distance = MLPY_DTW_DISTANCE_COSINE
+    else:
+        raise ValueError('Unsupported distance metric provided: {0!r}.'.format(metric))
 
     if constraint is None or constraint == 'None':
         fill_cost_matrix_unconstrained(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
-            sq, <double *> cost_arr.data)
+            distance, <double *> cost_arr.data)
     elif constraint == 'sakoe_chiba':
         if k is None:
             raise ValueError('Please specify value of k for Sakoe & Chiba constraint')
@@ -135,14 +143,14 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
         fill_cost_matrix_with_sakoe_chiba_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
-            sq, <double *> cost_arr.data,
+            distance, <double *> cost_arr.data,
             <int> k
         )
     elif constraint == 'itakura':
         fill_cost_matrix_with_itakura_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
-            sq, <double *> cost_arr.data)
+            distance, <double *> cost_arr.data)
 
     dist = cost_arr[n-1, m-1]
 
@@ -152,7 +160,7 @@ def dtw_std(x, y, dist_only=True, squared=False, k=None, constraint=None):
         px_arr, py_arr = retrace_path(x_arr.shape[0], y_arr.shape[0], cost_arr)
         return dist, cost_arr, (px_arr, py_arr)
 
-def dtw_sakoe_chiba(x, y, k, dist_only=True, squared=False):
+def dtw_sakoe_chiba(x, y, k, dist_only=True, metric='euclidean'):
     """DTW constrained by Sakoe & Chiba band of width 2k+1.
        The warping path is constrained by |i-j| <= k
 
@@ -163,8 +171,8 @@ def dtw_sakoe_chiba(x, y, k, dist_only=True, squared=False):
           second sequence
        dist_only : bool
           compute only the distance
-       squared : bool
-          squared Euclidean distance
+       metric : 'euclidean', 'sqeuclidean' or 'cosine'
+          distance metric to use
     :Returns:
        dist : float
           unnormalized minimum-distance warp path
@@ -176,9 +184,9 @@ def dtw_sakoe_chiba(x, y, k, dist_only=True, squared=False):
 
      .. [Sakoe78] H Sakoe, & S Chiba S. Dynamic programming algorithm optimization for spoken word recognition. Acoustics, 1978
      """
-    return dtw_std(x, y, dist_only=dist_only, squared=squared, constraint='sakoe_chiba', k=k)
+    return dtw_std(x, y, dist_only=dist_only, metric=metric, constraint='sakoe_chiba', k=k)
 
-def dtw_itakura(x, y, dist_only=True, squared=False):
+def dtw_itakura(x, y, dist_only=True, metric='euclidean'):
     """DTW constrained by Itakura Parallelogram
 
     :Parameters:
@@ -188,8 +196,8 @@ def dtw_itakura(x, y, dist_only=True, squared=False):
           second sequence
        dist_only : bool
           compute only the distance
-       squared : bool
-          squared Euclidean distance
+       metric : 'euclidean', 'sqeuclidean' or 'cosine'
+          distance metric to use
     :Returns:
        dist : float
           unnormalized minimum-distance warp path
@@ -201,7 +209,7 @@ def dtw_itakura(x, y, dist_only=True, squared=False):
 
     .. [Itakura75] F Itakura. Minimum prediction residual principle applied to speech recognition. Acoustics, Speech and Signal Processing, IEEE Transactions on, 23(1), 67–72, 1975. doi:10.1109/TASSP.1975.1162641.
     """
-    return dtw_std(x, y, dist_only=dist_only, squared=squared, constraint='itakura')
+    return dtw_std(x, y, dist_only=dist_only, metric=metric, constraint='itakura')
 
 def dtw_subsequence(x, y):
     """Subsequence DTW as described in [Muller07]_,

@@ -22,6 +22,20 @@
 #include <float.h>
 #include "cdtw.h"
 
+// From numpy/npy_common.h
+// TODO: maybe refactor this into common header?
+#if defined(_MSC_VER)
+        #define DTW_INLINE __inline
+#elif defined(__GNUC__)
+	#if defined(__STRICT_ANSI__)
+		#define DTW_INLINE __inline__
+	#else
+		#define DTW_INLINE inline
+	#endif
+#else
+        #define DTW_INLINE
+#endif
+
 double
 min3(double a, double b, double c)
 {
@@ -64,38 +78,69 @@ paliwal_window(int i, int j, int n, int m, int r)
     return 0;
 }
 
+//--- Distance metric --------------------------------------------------------------------------------------------------
+DTW_INLINE static double dot_product(const double *x, const double *y, const int n_dimensions)
+{
+    // based on https://github.com/scipy/scipy/blob/v0.11.0/scipy/spatial/src/distance.c
+    double s = 0.0;
+    int i;
+    for (i = 0; i < n_dimensions; i++) {
+        s += x[i] * y[i];
+    }
+    return s;
+}
+
+DTW_INLINE static double norm(const double *x, const int n_dimensions)
+{
+    double ans = 0;
+    int i;
+    for (i = 0; i < n_dimensions; i++)
+    {
+        ans += x[i]*x[i];
+    }
+    return sqrt(ans);
+}
+// cosine distance
+DTW_INLINE static double cosine(const double *x, const double *y, const int n_dimensions) {
+    return 1.0 - (dot_product(x, y, n_dimensions) / (norm(x, n_dimensions) * norm(y, n_dimensions)));
+}
 
 // squared euclidean distance
-double se_dist(const double *x, const double *y, const int n_dimensions)
+DTW_INLINE static double se_dist(const double *x, const double *y, const int n_dimensions)
 {
    double ans = 0;
-   for (int i = 0; i < n_dimensions; i++)
+   int i;
+   for (i = 0; i < n_dimensions; i++)
    {
-       ans += pow(x[i] - y[i], 2);
+       double diff = x[i] - y[i];
+       ans += diff*diff;
    }
    return ans;
 }
 
 // euclidean distance
-double e_dist(const double *x, const double *y, const int n_dimensions)
+DTW_INLINE static double e_dist(const double *x, const double *y, const int n_dimensions)
 {
   return sqrt(se_dist(x,y,n_dimensions));
 }
 
 // Distance function selector
-double (*distance_function(int squared))(const double *x, const double *y, const int) {
-    if (squared == 0)
+DTW_INLINE static double (*distance_function(int selector))(const double *x, const double *y, const int) {
+    if (selector == MLPY_DTW_DISTANCE_EUCLIDEAN)
         return &e_dist;
-    else
+    else if (selector == MLPY_DTW_DISTANCE_SQEUCLIDEAN)
         return &se_dist;
+    else if (selector == MLPY_DTW_DISTANCE_COSINE)
+        return &cosine;
+
 }
 
 // Fills the cost matrix, *cost, without any constraints - O(nm)
 void
-fill_cost_matrix_unconstrained(const double *x, const double *y, int n, int m, int n_dimensions, int squared, double *cost)
+fill_cost_matrix_unconstrained(const double *x, const double *y, int n, int m, int n_dimensions, int distance_selector, double *cost)
 {
      double (*dist)(const double *,  const double *, const int);
-     dist = distance_function(squared);
+     dist = distance_function(distance_selector);
      int i, j;
      cost[0] = (*dist)(&x[0], &y[0], n_dimensions);
 
@@ -113,11 +158,11 @@ fill_cost_matrix_unconstrained(const double *x, const double *y, int n, int m, i
 
 // Fills the cost matrix, *cost, with respect to Sakoe & Chiba band constraint |i-j| < ks  -- O(k*n)
 void
-fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int squared, double *cost,
+fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int distance_selector, double *cost,
                                              int sakoe_chiba_band_parameter)
 {
       double (*dist)(const double *,  const double *, const int);
-      dist = distance_function(squared);
+      dist = distance_function(distance_selector);
 
       int i, j;
 
@@ -152,10 +197,10 @@ int itakura_constraint(int i, int j, int n, int m) {
 
 // Fill cost matrix constrained by Itakura Paralellogram
 void
-fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int squared, double *cost)
+fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int distance_selector, double *cost)
 {
     double (*dist)(const double *,  const double *, const int);
-    dist = distance_function(squared);
+    dist = distance_function(distance_selector);
 
     int i, j;
     // Fill cost matrix with infinities first
@@ -193,11 +238,11 @@ fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n
 void
 fill_constrained_cost_matrix(const double *x, const double *y,
                              int n, int m, int n_dimensions,
-                             int squared, double *cost,
+                             int distance_selector, double *cost,
                              const char *constraint_matrix)
 {
     double (*dist)(const double *,  const double *, const int);
-    dist = distance_function(squared);
+    dist = distance_function(distance_selector);
 
     int i, j;
 
