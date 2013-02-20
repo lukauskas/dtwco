@@ -68,9 +68,10 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
           one of the following:
              None or ('None') : unconstrained DTW.
              'sakoe_chiba': DTW constrained by Sakoe & Chiba band of width 2k + 1 (requires value of k set), see [Sakoe78]
+             'slanted_band': Generalisation of Sakoe & Chiba constraint that supports sequences of different lengths
              'itakura'    : DTW constrained by Itakura Parallelogram, see
        k : int
-          parameter required by sakoe_chiba constraint.
+          parameter required by sakoe_chiba and slanted_band constraints.
     :Returns:
        dist : float
           unnormalized minimum-distance warp path 
@@ -146,6 +147,20 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
             distance, <double *> cost_arr.data,
             <int> k
         )
+    elif constraint == 'slanted_band':
+        if k is None:
+            raise ValueError('Please specify value of k for Slanted Band constraint')
+
+        k = int(k)
+        if k < 0:
+            raise ValueError('Value of k must be greater or equal than 0')
+
+        fill_cost_matrix_with_slanted_band_constraint(
+            <double *> x_arr.data, <double *> y_arr.data,
+            <int> n, <int> m, <int> n_dimensions,
+            distance, <double *> cost_arr.data,
+            <int> k
+        )
     elif constraint == 'itakura':
         fill_cost_matrix_with_itakura_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
@@ -185,6 +200,34 @@ def dtw_sakoe_chiba(x, y, k, dist_only=True, metric='euclidean'):
      .. [Sakoe78] H Sakoe, & S Chiba S. Dynamic programming algorithm optimization for spoken word recognition. Acoustics, 1978
      """
     return dtw_std(x, y, dist_only=dist_only, metric=metric, constraint='sakoe_chiba', k=k)
+
+def dtw_slanted_band(x, y, k, dist_only=True, metric='euclidean'):
+    """DTW constrained by slanted band of width 2k+1.
+       The warping path is constrained by |i*len(x)/len(k)-j| <= k.
+
+       Similar to Sakoe & Chiba band constraint, see `dtw_sakoe_chiba`.
+
+    :Parameters:
+       x : 1d array_like object (N)
+          first sequence
+       y : 1d array_like object (M)
+          second sequence
+       dist_only : bool
+          compute only the distance
+       metric : 'euclidean', 'sqeuclidean' or 'cosine'
+          distance metric to use
+    :Returns:
+       dist : float
+          unnormalized minimum-distance warp path
+          between sequences
+       cost : 2d numpy array (N,M) [if dist_only=False]
+          accumulated cost matrix
+       path : tuple of two 1d numpy array (path_x, path_y) [if dist_only=False]
+          warp path
+
+     """
+    return dtw_std(x, y, dist_only=dist_only, metric=metric, constraint='slanted_band', k=k)
+
 
 def dtw_itakura(x, y, dist_only=True, metric='euclidean'):
     """DTW constrained by Itakura Parallelogram
