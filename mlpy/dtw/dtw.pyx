@@ -128,7 +128,7 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
     else:
         raise ValueError('Unsupported distance metric provided: {0!r}.'.format(metric))
 
-    if constraint is None or constraint == 'None':
+    if constraint is None or constraint == 'None' or constraint == 'none':
         fill_cost_matrix_unconstrained(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
