@@ -208,7 +208,7 @@ fill_cost_matrix_with_slanted_band_constraint(const double *x, const double *y, 
       cost[0] = (*dist)(&x[0], &y[0], n_dimensions);
 
       // abs(j - i*slant) should always be less than or equal to width
-      for (i=1; (int) i*slant <min2(n, width+1); i++)
+      for (i=1; i < n && (int)i*slant < width+1; i++)
           cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
 
       // i=0 below, so abs(j) <= width
