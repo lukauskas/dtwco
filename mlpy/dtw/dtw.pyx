@@ -155,18 +155,32 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
         if k < 0:
             raise ValueError('Value of k must be greater or equal than 0')
 
+        transpose_cost = False
+        if n < m:
+            # swap the arrays as the cost matrix filling function expects len(x) > len(y)
+            n, m = m, n
+            x_arr, y_arr = y_arr, x_arr
+            cost_arr = np.asfortranarray(cost_arr)
+            transpose_cost = True
+
         fill_cost_matrix_with_slanted_band_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
             distance, <double *> cost_arr.data,
             <int> k
         )
+
+        if transpose_cost:
+            # swap everything back again
+            cost_arr = np.ascontiguousarray(cost_arr)
+            x_arr, y_arr = y_arr, x_arr
+            n, m = m, n
+
     elif constraint == 'itakura':
         fill_cost_matrix_with_itakura_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
             distance, <double *> cost_arr.data)
-
     dist = cost_arr[n-1, m-1]
 
     if dist_only:

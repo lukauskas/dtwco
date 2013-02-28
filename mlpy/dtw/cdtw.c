@@ -188,6 +188,8 @@ fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, i
 // Fills the cost matrix, *cost, using slanted band constraint.
 // this is similar to sakoe & chiba constraint but is generalised for sequences with unequal lengths
 // based on the implementation of similar constraint in R
+// The implementation expects len(x) >= len(y), otherwise bad things happen. Python side makes sure this is
+// called correctly
 void
 fill_cost_matrix_with_slanted_band_constraint(const double *x, const double *y, int n, int m, int n_dimensions,
                                              int distance_selector, double *cost, int width)
@@ -208,19 +210,19 @@ fill_cost_matrix_with_slanted_band_constraint(const double *x, const double *y, 
       cost[0] = (*dist)(&x[0], &y[0], n_dimensions);
 
       // abs(j - i*slant) should always be less than or equal to width
-      for (i=1; i < n && (int)i*slant < width+1; i++)
+      for (i=1; i < n && (int)(i*slant) < width+1; i++)
           cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
 
       // i=0 below, so abs(j) <= width
-      for (j=1; j<min2(m, width+1); j++)
+      for (j=1; j<min2(m, (int)width+1); j++)
           cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)];
 
       // Fill only the columns that satisfy |i-j| <= width
       for (i=1; i<n; i++)
       {
-        i_times_slant = (int) i * slant;
+        i_times_slant = (int) ceil(i * slant);
 
-        for (j=max2(i_times_slant-width, 1); j<min2(m, i_times_slant+width+1); j++) {
+        for (j=max2(i_times_slant-width, 1); j<min2(m, i_times_slant+(int)width+1); j++) {
              cost[i*m+j] = (*dist)(&x[i*n_dimensions], &y[j*n_dimensions], n_dimensions) +
     	        min3(cost[(i-1)*m+j], cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]);
           }
