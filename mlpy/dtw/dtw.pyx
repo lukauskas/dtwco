@@ -49,7 +49,7 @@ cdef retrace_path(int n, int m, np.ndarray[np.float_t, ndim=2] cost_arr):
 
     return px_arr, py_arr
 
-def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
+def dtw_std(x, y, dist_only=True, metric='euclidean', constraint=None, k=None, warping_penalty=0):
     """Standard DTW as described in [Muller07]_,
     using the Euclidean distance (absolute value 
     of the difference) or squared Euclidean distance
@@ -72,7 +72,9 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
              'itakura'    : DTW constrained by Itakura Parallelogram, see
        k : int
           parameter required by sakoe_chiba and slanted_band constraints.
-    :Returns:
+       warping_penalty: double
+          warping penalty to impose on non-diagonal path changes (default: 0)
+       :Returns:
        dist : float
           unnormalized minimum-distance warp path 
           between sequences
@@ -132,7 +134,7 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
         fill_cost_matrix_unconstrained(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
-            distance, <double *> cost_arr.data)
+            distance, warping_penalty, <double *> cost_arr.data)
     elif constraint == 'sakoe_chiba':
         if k is None:
             raise ValueError('Please specify value of k for Sakoe & Chiba constraint')
@@ -144,7 +146,7 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
         fill_cost_matrix_with_sakoe_chiba_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
-            distance, <double *> cost_arr.data,
+            distance, warping_penalty, <double *> cost_arr.data,
             <int> k
         )
     elif constraint == 'slanted_band':
@@ -166,7 +168,7 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
         fill_cost_matrix_with_slanted_band_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
-            distance, <double *> cost_arr.data,
+            distance, warping_penalty, <double *> cost_arr.data,
             <int> k
         )
 
@@ -180,7 +182,7 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', k=None, constraint=None):
         fill_cost_matrix_with_itakura_constraint(
             <double *> x_arr.data, <double *> y_arr.data,
             <int> n, <int> m, <int> n_dimensions,
-            distance, <double *> cost_arr.data)
+            distance, warping_penalty, <double *> cost_arr.data)
     dist = cost_arr[n-1, m-1]
 
     if dist_only:

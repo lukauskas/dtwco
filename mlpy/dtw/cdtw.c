@@ -132,12 +132,12 @@ DTW_INLINE static double (*distance_function(int selector))(const double *x, con
         return &se_dist;
     else if (selector == MLPY_DTW_DISTANCE_COSINE)
         return &cosine;
-
 }
 
 // Fills the cost matrix, *cost, without any constraints - O(nm)
 void
-fill_cost_matrix_unconstrained(const double *x, const double *y, int n, int m, int n_dimensions, int distance_selector, double *cost)
+fill_cost_matrix_unconstrained(const double *x, const double *y, int n, int m, int n_dimensions, int distance_selector,
+ const double warping_penalty, double *cost)
 {
      double (*dist)(const double *,  const double *, const int);
      dist = distance_function(distance_selector);
@@ -145,20 +145,22 @@ fill_cost_matrix_unconstrained(const double *x, const double *y, int n, int m, i
      cost[0] = (*dist)(&x[0], &y[0], n_dimensions);
 
       for (i=1; i<n; i++)
-          cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
+          cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m] + warping_penalty;
 
       for (j=1; j<m; j++)
-          cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)];
+          cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)] + warping_penalty;
 
       for (i=1; i<n; i++)
         for (j=1; j<m; j++)
              cost[i*m+j] = (*dist)(&x[i*n_dimensions], &y[j*n_dimensions], n_dimensions) +
-    	        min3(cost[(i-1)*m+j], cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]);
+    	        min3(cost[(i-1)*m+j]+warping_penalty, cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]+warping_penalty);
 }
 
 // Fills the cost matrix, *cost, with respect to Sakoe & Chiba band constraint |i-j| < ks  -- O(k*n)
 void
-fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int distance_selector, double *cost,
+fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int distance_selector,
+                                             double warping_penalty,
+                                             double *cost,
                                              int sakoe_chiba_band_parameter)
 {
       double (*dist)(const double *,  const double *, const int);
@@ -174,15 +176,15 @@ fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, i
       cost[0] = (*dist)(&x[0], &y[0], n_dimensions);
 
       for (i=1; i<min2(n, sakoe_chiba_band_parameter+1); i++)
-          cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
+          cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m] + warping_penalty;
       for (j=1; j<min2(m, sakoe_chiba_band_parameter+1); j++)
-          cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)];
+          cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)] + warping_penalty;
 
       // Fill only the columns that satisfy |i-j| <= sakoe_chiba_band_parameter
       for (i=1; i<n; i++)
         for (j=max2(i-sakoe_chiba_band_parameter, 1); j<min2(m, i+sakoe_chiba_band_parameter+1); j++)
              cost[i*m+j] = (*dist)(&x[i*n_dimensions], &y[j*n_dimensions], n_dimensions) +
-    	        min3(cost[(i-1)*m+j], cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]);
+    	        min3(cost[(i-1)*m+j] + warping_penalty, cost[(i-1)*m+(j-1)], cost[i*m+(j-1)] + warping_penalty);
 }
 
 // Fills the cost matrix, *cost, using slanted band constraint.
@@ -192,7 +194,7 @@ fill_cost_matrix_with_sakoe_chiba_constraint(const double *x, const double *y, i
 // called correctly
 void
 fill_cost_matrix_with_slanted_band_constraint(const double *x, const double *y, int n, int m, int n_dimensions,
-                                             int distance_selector, double *cost, int width)
+                                             int distance_selector, double warping_penalty, double *cost, int width)
 {
       double (*dist)(const double *,  const double *, const int);
       dist = distance_function(distance_selector);
@@ -211,11 +213,11 @@ fill_cost_matrix_with_slanted_band_constraint(const double *x, const double *y, 
 
       // abs(j - i*slant) should always be less than or equal to width
       for (i=1; i < n && (int)(i*slant) < width+1; i++)
-          cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
+          cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m] + warping_penalty;
 
       // i=0 below, so abs(j) <= width
       for (j=1; j<min2(m, (int)width+1); j++)
-          cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)];
+          cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)] + warping_penalty;
 
       // Fill only the columns that satisfy |i-j| <= width
       for (i=1; i<n; i++)
@@ -224,7 +226,7 @@ fill_cost_matrix_with_slanted_band_constraint(const double *x, const double *y, 
 
         for (j=max2(i_times_slant-width, 1); j<min2(m, i_times_slant+(int)width+1); j++) {
              cost[i*m+j] = (*dist)(&x[i*n_dimensions], &y[j*n_dimensions], n_dimensions) +
-    	        min3(cost[(i-1)*m+j], cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]);
+    	        min3(cost[(i-1)*m+j] + warping_penalty, cost[(i-1)*m+(j-1)], cost[i*m+(j-1)] + warping_penalty);
           }
       }
 }
@@ -240,7 +242,8 @@ int itakura_constraint(int i, int j, int n, int m) {
 
 // Fill cost matrix constrained by Itakura Paralellogram
 void
-fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int distance_selector, double *cost)
+fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n, int m, int n_dimensions, int distance_selector,
+                                         double warping_penalty, double *cost)
 {
     double (*dist)(const double *,  const double *, const int);
     dist = distance_function(distance_selector);
@@ -256,12 +259,12 @@ fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n
     for (i=1; i<n; i++)
     {
         if (!itakura_constraint(i, 0, n, m)) continue;
-        cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m];
+        cost[i*m] = (*dist)(&x[i*n_dimensions], &y[0], n_dimensions) + cost[(i-1)*m] + warping_penalty;
     }
     for (j=1; j<m; j++)
     {
         if (!itakura_constraint(0,j,n,m)) continue;
-        cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)];
+        cost[j] = (*dist)(&x[0], &y[j*n_dimensions], n_dimensions) + cost[(j-1)] + warping_penalty;
     }
     for (i=1; i<n; i++)
     {
@@ -271,7 +274,7 @@ fill_cost_matrix_with_itakura_constraint(const double *x, const double *y, int n
                  continue;
 
              cost[i*m+j] = (*dist)(&x[i*n_dimensions], &y[j*n_dimensions], n_dimensions) +
-                min3(cost[(i-1)*m+j], cost[(i-1)*m+(j-1)], cost[i*m+(j-1)]);
+                min3(cost[(i-1)*m+j] + warping_penalty, cost[(i-1)*m+(j-1)], cost[i*m+(j-1)] + warping_penalty);
         }
     }
 }
