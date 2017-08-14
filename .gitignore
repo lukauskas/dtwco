@@ -4,3 +4,5 @@ build
 .hg
 *.orig
 *~
+.idea
+*.egg-info
