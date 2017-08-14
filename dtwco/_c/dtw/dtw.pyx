@@ -1,5 +1,8 @@
-## This code is written by Davide Albanese, <albanese@fbk.eu>
-## (C) 2011 mlpy Developers.
+## This code was originally written by Davide Albanese <davide.albanese@gmail.com>.
+##   (C) mlpy Developers.
+##
+##   Since then it has been modified by Saulius Lukauskas and is now maintained under the same
+##   license by him.
 
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by

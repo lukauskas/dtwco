@@ -1,9 +1,13 @@
 /*  
-    This code is written by Davide Albanese <davide.albanese@gmail.com>.
+
+    This code was originally written by Davide Albanese <davide.albanese@gmail.com>.
     (C) mlpy Developers.
 
+    Since then it has been modified by Saulius Lukauskas and is now maintained under the same
+    license by him.
+
     This program is free software: you can redistribute it and/or modify
-    it underthe terms of the GNU General Public License as published by
+    it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
