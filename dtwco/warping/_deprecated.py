@@ -1,4 +1,6 @@
-import dtwco._c.dtw as _c
+from dtwco._c import dtw as _c
+from dtwco.warping.core import dtw
+import warnings
 
 def dtw_std(x, y, dist_only=True, metric='euclidean', constraint=None, k=None, warping_penalty=0):
     """Standard DTW as described in [Muller07]_,
@@ -40,12 +42,15 @@ def dtw_std(x, y, dist_only=True, metric='euclidean', constraint=None, k=None, w
         .. [Itakura75] F Itakura. Minimum prediction residual principle applied to speech recognition. Acoustics, Speech and Signal Processing, IEEE Transactions on, 23(1), 67–72, 1975. doi:10.1109/TASSP.1975.1162641.
         """
 
-    return _c.dtw_std(x, y,
-                      dist_only=dist_only,
-                      metric=metric,
-                      constraint=constraint,
-                      k=k,
-                      warping_penalty=warping_penalty)
+    warnings.warn("Use `dtwco.dtw.dtw` instead. Will be removed in 1.0.0", DeprecationWarning,
+                  stacklevel=2)
+
+    return dtw(x, y,
+               dist_only=dist_only,
+               metric=metric,
+               constraint=constraint,
+               k=k,
+               warping_penalty=warping_penalty)
 
 
 def dtw_slanted_band(x, y, k, dist_only=True, metric='euclidean'):
@@ -74,9 +79,15 @@ def dtw_slanted_band(x, y, k, dist_only=True, metric='euclidean'):
 
          """
 
-    return _c.dtw_slanted_band(x, y, k,
-                               dist_only=dist_only,
-                               metric=metric)
+    warnings.warn("Use `dtwco.dtw.dtw` instead with `constraint='slanted_band'`. "
+                  "Will be removed in 1.0.0", DeprecationWarning,
+                  stacklevel=2)
+
+    return dtw(x, y,
+               constraint='slanted_band',
+               k=k,
+               dist_only=dist_only,
+               metric=metric)
 
 
 def dtw_itakura(x, y, dist_only=True, metric='euclidean'):
@@ -103,33 +114,11 @@ def dtw_itakura(x, y, dist_only=True, metric='euclidean'):
         .. [Itakura75] F Itakura. Minimum prediction residual principle applied to speech recognition. Acoustics, Speech and Signal Processing, IEEE Transactions on, 23(1), 67–72, 1975. doi:10.1109/TASSP.1975.1162641.
         """
 
-    return _c.dtw_itakura(x, y, dist_only=dist_only, metric=metric)
+    warnings.warn("Use `dtwco.dtw.dtw` instead with `constraint='itakura'`. "
+                  "Will be removed in 1.0.0", DeprecationWarning,
+                  stacklevel=2)
 
-def dtw_subsequence(x, y):
-    """Subsequence DTW as described in [Muller07]_,
-        assuming that the length of `y` is much larger
-        than the length of `x` and using the Manhattan
-        distance (absolute value of the difference) as
-        local cost measure.
-
-        Returns the subsequence of `y` that are close to `x`
-        with respect to the minimum DTW distance.
-
-        :Parameters:
-           x : 1d array_like object (N)
-              first sequence
-           y : 1d array_like object (M)
-              second sequence
-
-        :Returns:
-           dist : float
-              unnormalized minimum-distance warp path
-              between x and the subsequence of y
-           cost : 2d numpy array (N,M) [if dist_only=False]
-              complete accumulated cost matrix
-           path : tuple of two 1d numpy array (path_x, path_y)
-              warp path
-
-        """
-
-    return _c.dtw_subsequence(x, y)
+    return dtw(x, y,
+               constraint='itakura',
+               dist_only=dist_only,
+               metric=metric)

@@ -1,2 +1,2 @@
-import dtwco.dtw
-from dtwco.dtw import *
+import dtwco.warping
+from dtwco.warping import *
