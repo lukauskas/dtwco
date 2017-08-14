@@ -14,8 +14,8 @@ except ImportError:
 
 here = path.abspath(path.dirname(__file__))
 
-extensions = cythonize([Extension("dtwco._cdtw", ["dtwco/_cdtw/cdtw.c",
-                                                  "dtwco/_cdtw/dtw.pyx"],
+extensions = cythonize([Extension("dtwco._c.dtw", ["dtwco/_c/dtw/cdtw.c",
+                                                   "dtwco/_c/dtw/dtw.pyx"],
                                   include_dirs=[numpy.get_include()])
                         ])
 
@@ -68,6 +68,7 @@ setup(
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
     package_data={
+        'dtwco/_c/dtw': ['*.pxd'],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
