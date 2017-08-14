@@ -1,93 +1,84 @@
-from distutils.core import setup, Extension
-from distutils.sysconfig import *
-from distutils.util import *
-import os
-import os.path
-import numpy
+"""
+`dtwco` - implementation of constrained DTW algorithms in python.
+"""
 
-try:
-   from distutils.command.build_py import build_py_2to3 \
-       as build_py
-except ImportError:
-   from distutils.command.build_py import build_py
+from setuptools import setup, find_packages
+from codecs import open
+from os import path
 
-from Cython.Distutils import build_ext
+here = path.abspath(path.dirname(__file__))
 
-#### data files
-data_files = []
-# Include gsl libs for the win32 distribution
-if get_platform() == "win32":
-   dlls = ["gsl.lib", "cblas.lib"]
-   data_files += [("Lib\site-packages\mlpy", dlls)]
-   
-#### libs
-if get_platform() == "win32":
-   gsl_lib = ['gsl', 'cblas']
-   math_lib = []
-else:
-   gsl_lib = ['gsl', 'gslcblas']
-   math_lib = ['m']
-   
-#### Extra compile args
-if get_platform() == "win32":
-   extra_compile_args = []
-else:
-   extra_compile_args = ['-Wno-strict-prototypes']
-   
-#### Python include
-py_inc = [get_python_inc()]
+setup(
+    name='dtwco',
 
-#### NumPy include
-np_lib = os.path.dirname(numpy.__file__)
-np_inc = [os.path.join(np_lib, 'core/include')]
+    # Versions should comply with PEP440.  For a discussion on single-sourcing
+    # the version across setup.py and the project code, see
+    # https://packaging.python.org/en/latest/single_source_version.html
+    version='1.2.0',
 
-#### scripts
-scripts = []
+    description='dtwco - implementation of constrained DTW algorithms in python',
+    # TODO: long description
+    long_description='dtwco - implementation of constrained DTW algorithms in python',
 
-#### cmdclass
-cmdclass = {'build_py': build_py, 'build_ext': build_ext}
+    # The project's main homepage.
+    url='https://github.com/lukauskas/mlpy-plus-dtw',
 
-#### Extension modules
-ext_modules = []
-ext_modules += [Extension("mlpy.dtw",
-                         ["mlpy/dtw/cdtw.c",
-                         "mlpy/dtw/dtw.pyx"],
-                         libraries=math_lib,
-                         include_dirs=py_inc + np_inc)]
-packages=['mlpy'],
+    # Author details
+    author='Saulius Lukauskas',
+    author_email='saulius.lukauskas13@imperial.ac.uk',
 
-classifiers = ['Development Status :: 5 - Production/Stable',
-               'Intended Audience :: Science/Research',
-               'License :: OSI Approved :: GNU General Public License (GPL)',
-               'Programming Language :: C',
-               'Programming Language :: C++',
-               'Programming Language :: Python',
-               'Programming Language :: Python :: 3',
-               'Topic :: Scientific/Engineering :: Artificial Intelligence',
-               'Topic :: Scientific/Engineering :: Mathematics',
-               'Operating System :: POSIX :: Linux',
-               'Operating System :: POSIX :: BSD',
-               'Operating System :: MacOS',
-               'Operating System :: Microsoft :: Windows',
-               'Operating System :: POSIX'
-               ]
+    # Choose your license
+    license='GPL-3',
 
-setup(name='mlpy',
-      version='3.5.1',
-      requires=['numpy (>=1.3.0)'],
-      description='mlpy - Machine Learning Py - ' \
-         'High-Performance Python Package for Predictive Modeling',
-      author='mlpy Developers',
-      author_email='davide.albanese@gmail.com',
-      maintainer='Davide Albanese',
-      maintainer_email='davide.albanese@gmail.com',
-      packages=packages,
-      url='mlpy.sourceforge.net',
-      download_url='https://sourceforge.net/projects/mlpy/',
-      license='GPLv3',
-      classifiers=classifiers,
-      cmdclass=cmdclass,
-      ext_modules=ext_modules,
-      scripts=scripts,
-      data_files=data_files
-      )
+
+    classifiers=[
+        'Development Status :: 4 - Beta',
+
+        'Programming Language :: Python :: 3',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
+        'Topic :: Scientific/Engineering :: Mathematics',
+    ],
+
+    # What does your project relate to?
+    keywords='dtw',
+
+    # You can just specify the packages manually here if your project is
+    # simple. Or you can use find_packages().
+    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+
+    # Alternatively, if you want to distribute just a my_module.py, uncomment
+    # this:
+    #   py_modules=["my_module"],
+
+    # List run-time dependencies here.  These will be installed by pip when
+    # your project is installed. For an analysis of "install_requires" vs pip's
+    # requirements files see:
+    # https://packaging.python.org/en/latest/requirements.html
+    install_requires=['numpy', 'cython'],
+
+    # List additional groups of dependencies here (e.g. development
+    # dependencies). You can install these using the following syntax,
+    # for example:
+    # $ pip install -e .[dev,test]
+    extras_require={
+        'test': ['coverage'],
+    },
+
+    # If there are data files included in your packages that need to be
+    # installed, specify them here.  If using Python 2.6 or less, then these
+    # have to be included in MANIFEST.in as well.
+    package_data={
+    },
+
+    # Although 'package_data' is the preferred approach, in some case you may
+    # need to place data files outside of your packages. See:
+    # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
+    # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
+    data_files=[],
+
+    # To provide executable scripts, use entry points in preference to the
+    # "scripts" keyword. Entry points provide cross-platform support and allow
+    # pip to create the appropriate form of executable for the target platform.
+    entry_points={
+    },
+)
