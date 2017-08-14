@@ -1,3 +1,0 @@
-OBJECTS = fastcluster_R.o
-# Optionally: Optimize, and warn about everything
-# PKG_CPPFLAGS = -O3 -Wall -pedantic -ansi -Wconversion -Wsign-conversion -Wextra
