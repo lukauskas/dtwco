@@ -1,12 +1,23 @@
 """
 `dtwco` - implementation of constrained DTW algorithms in python.
 """
-
+from setuptools import Extension
 from setuptools import setup, find_packages
-from codecs import open
 from os import path
 
+try:
+    from Cython.Build import cythonize
+    import numpy
+except ImportError:
+    print('Ensure cython and numpy are installed before building this')
+    raise
+
 here = path.abspath(path.dirname(__file__))
+
+extensions = cythonize([Extension("dtwco._cdtw", ["dtwco/_cdtw/cdtw.c",
+                                                  "dtwco/_cdtw/dtw.pyx"],
+                                  include_dirs=[numpy.get_include()])
+                        ])
 
 setup(
     name='dtwco',
@@ -14,7 +25,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.2.0',
+    version='0.9',
 
     description='dtwco - implementation of constrained DTW algorithms in python',
     # TODO: long description
@@ -27,7 +38,6 @@ setup(
     author='Saulius Lukauskas',
     author_email='saulius.lukauskas13@imperial.ac.uk',
 
-    # Choose your license
     license='GPL-3',
 
 
@@ -39,21 +49,11 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
     ],
 
-    # What does your project relate to?
     keywords='dtw',
 
-    # You can just specify the packages manually here if your project is
-    # simple. Or you can use find_packages().
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+    ext_modules=extensions,
 
-    # Alternatively, if you want to distribute just a my_module.py, uncomment
-    # this:
-    #   py_modules=["my_module"],
-
-    # List run-time dependencies here.  These will be installed by pip when
-    # your project is installed. For an analysis of "install_requires" vs pip's
-    # requirements files see:
-    # https://packaging.python.org/en/latest/requirements.html
     install_requires=['numpy', 'cython'],
 
     # List additional groups of dependencies here (e.g. development
