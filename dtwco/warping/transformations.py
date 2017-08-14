@@ -1,35 +1,6 @@
 import numpy as np
 
-
-def _strip_nan(sequence):
-    """
-    Strips NaNs that are padded to the right of each peak if they are of unequal length
-    :param sequence:
-    :return:
-    """
-    sequence = np.asarray(sequence)
-
-    try:
-        lookup = np.all(np.isnan(sequence), axis=1)
-    except ValueError:
-        # Will get thrown for one-dimensional arrays
-        return sequence[~np.isnan(sequence)]
-
-    sequence = sequence[~lookup]
-
-    if np.any(np.isnan(sequence)):
-        raise ValueError('Inconsistent NaNs between dimensions')
-
-    return sequence
-
-
-def _no_nan_len(sequence):
-    """
-    Returns length of the sequence after removing all the nans from it.
-    :param sequence:
-    :return:
-    """
-    return len(_strip_nan(sequence))
+from dtwco.warping.utils import no_nan_len
 
 
 def dtw_projection(sequence, base_sequence, dtw_path):
@@ -48,7 +19,7 @@ def dtw_projection(sequence, base_sequence, dtw_path):
     current_sums = np.zeros(base_sequence.shape)
     current_counts = np.zeros(base_sequence.shape)
 
-    nnl = _no_nan_len(base_sequence)
+    nnl = no_nan_len(base_sequence)
 
     try:
         filler = [np.nan] * base_sequence.shape[1]
