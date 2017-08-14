@@ -4,7 +4,7 @@ from dtwco.warping.scaling import uniform_shrinking_to_length
 from dtwco.warping.utils import no_nan_len
 
 def sdtw_averaging(sequence_a, sequence_b, dtw_path,
-                   weight_a=1.0, weight_b=1.0,
+                   weight_a=1, weight_b=1,
                    shrink=True):
     """
     Implements Scaled Dynamic Time Warping Path Averaging as described in [#Niennattrakul:2009ep]
@@ -13,8 +13,8 @@ def sdtw_averaging(sequence_a, sequence_b, dtw_path,
     :param sequence_a: sequence A
     :param sequence_b: sequence B
     :param dtw_path: computed mapped path between the sequences.
-    :param weight_a: weight of sequence A
-    :param weight_b: weight of sequence B
+    :param weight_a: weight of sequence A, integer
+    :param weight_b: weight of sequence B, integer
     :param shrink: if set to true the data will be shrunk to the length of maximum seq
     :return:
     """
@@ -27,8 +27,11 @@ def sdtw_averaging(sequence_a, sequence_b, dtw_path,
 
     prev = None
 
+    weight_a = int(weight_a)
+    weight_b = int(weight_b)
+
     # The paper does not explicitly say how to round this
-    diagonal_coefficient = int((weight_a + weight_b) / 2.0)
+    diagonal_coefficient = (weight_a + weight_b) // 2
     for a, b in dtw_path:
 
         item = (weight_a * sequence_a[a] + weight_b * sequence_b[b]) / (weight_a + weight_b)
