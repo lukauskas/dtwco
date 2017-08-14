@@ -32,7 +32,7 @@ setup(
     long_description='dtwco - implementation of constrained DTW algorithms in python',
 
     # The project's main homepage.
-    url='https://github.com/lukauskas/mlpy-plus-dtw',
+    url='https://github.com/lukauskas/dtwco',
 
     # Author details
     author='Saulius Lukauskas',
