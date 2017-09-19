@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from dtwco._c import dtw as _c
 from dtwco.warping.core import dtw
 import warnings

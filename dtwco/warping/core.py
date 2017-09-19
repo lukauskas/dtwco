@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from dtwco._c import dtw as _c
 
 def dtw(x, y, dist_only=True, metric='euclidean', constraint=None, k=None, warping_penalty=0):
