@@ -1,3 +1,7 @@
+This repository is no longer maintained (nor has it been for a while). It is read only as of 2020-10-06.
+
+[Feel free to fork it, but consider using `tslearn` instead](https://tslearn.readthedocs.io/en/stable/user_guide/dtw.html?highlight=sakoe%20chiba#additional-constraints)
+
 # dtwco - implementation of constrained DTW algorithms in python.
 
 This code implements a number of constrained Dynamic Time Warping (DTW) algorithms as described in the literature.
